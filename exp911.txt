@@ -1,0 +1,110 @@
+# Create global variables
+set ns [new Simulator]
+
+# Setting NAM trace
+set namf [open wired1.nam w]
+$ns namtrace-all $namf
+
+# Open the trace file
+set tracef [open wired1.tr w]
+$ns trace-all $tracef
+
+set proto rlm
+
+# Setting the color values
+$ns color 1 blue
+$ns color 2 yellow
+$ns color 3 red
+
+# —— Creating client-router-end server nodes ———
+set n0 [$ns node]
+set n1 [$ns node]
+set n2 [$ns node]
+
+# Establish the link between the nodes
+$ns duplex-link $n0 $n1 2Mb 100ms DropTail
+$ns duplex-link $n1 $n2 200Kb 100ms DropTail
+
+# Label the nodes
+$ns at 0.0 "$n0 label Client1"
+$ns at 0.0 "$n1 label Server"
+$ns at 0.0 "$n2 label Client2"
+
+# Setting the color for nodes
+$n0 color blue
+$n1 color red
+$n2 color green
+
+# Adding a shape to nodes for differentiation
+$n1 shape hexagon
+$n2 shape square
+
+# Finish procedure
+proc finish {} {
+    global ns tracef namf
+    $ns flush-trace
+    close $tracef
+    close $namf
+    puts "Opening nam..."
+    exec nam wired1.nam &
+    exit 0
+}
+
+# Calling the finish procedure
+$ns at 2.0 "finish"
+
+# Run the simulation
+$ns run
+
+//ex11
+# Create a simulator object
+set ns [new Simulator]
+
+# Open the NAM trace file
+set nf [open out.nam w]
+$ns namtrace-all $nf
+
+# Define a 'finish' procedure
+proc finish {} {
+    global ns nf
+    $ns flush-trace
+    close $nf
+    exec nam out.nam &
+    exit 0
+}
+
+# Create five nodes
+set n0 [$ns node]
+set n1 [$ns node]
+set n2 [$ns node]
+set n3 [$ns node]
+set n4 [$ns node]
+
+# ✅ Corrected: Create a LAN between the nodes (no 'Channel' at the end)
+set lan0 [$ns newLan "$n0 $n1 $n2 $n3 $n4" 0.5Mb 40ms LL Queue/DropTail MAC/Csma/Cd]
+
+# Create a TCP agent and attach it to node n0
+set tcp0 [new Agent/TCP]
+$tcp0 set class_ 1
+$ns attach-agent $n0 $tcp0
+
+# Create a TCP Sink agent and attach it to node n3
+set sink0 [new Agent/TCPSink]
+$ns attach-agent $n3 $sink0
+
+# Connect the traffic source with the sink
+$ns connect $tcp0 $sink0
+
+# Create an FTP application and attach it to tcp0
+set ftp0 [new Application/FTP]
+$ftp0 attach-agent $tcp0
+
+# Schedule the FTP application to start and stop
+$ns at 0.5 "$ftp0 start"
+$ns at 4.5 "$ftp0 stop"
+
+# Call the finish procedure at 5.0 seconds
+$ns at 5.0 "finish"
+
+# Run the simulation
+$ns run
